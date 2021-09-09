@@ -1,0 +1,8 @@
+loguru
+fastapi
+uvicorn
+jsonpointer
+requests
+pyyaml
+jinja2
+argparse
