@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.DEBUG, format="%(levelname)s | %(message)s")
 
 modelHeader = """
 from pydantic import BaseModel
-from typing import Optional, List, Literal
+from typing import *
 
 # 可自行修改增加校验精准度
 
@@ -127,6 +127,7 @@ from SDK.cli import CLI
 
 import actions
 import triggers
+import indicator_receivers
 
 
 # 整个程序入口
@@ -143,6 +144,10 @@ class {{ pluginName }}(Plugin):
 
         {% for triggerClass in triggerClassees %}
         self.add_triggers(triggers.{{ triggerClass }}())
+        {% endfor %}
+
+        {% for indicatorReceiverClasse in indicatorReceiverClassees %}
+        self.add_indicator_receivers(indicator_receivers.{{ indicatorReceiverClasse }}())
         {% endfor %}
 
 
@@ -382,4 +387,157 @@ None
 
 ## 参考引用
 """
+
+INDICATORRECEIVERSTEMPLATE = """
+from SDK.subassembly import IndicatorReceivers
+from SDK.base import Core
+
+from .models import {{ connModel }}, {{ inputModel }}, {{ outputModel }}
+
+
+class {{ indicator_receiversName }}(IndicatorReceivers):
+
+    def __init__(self):
+        # 初始化
+
+        self.name = "{{ name }}"
+        self.inputModel = {{ inputModel }}
+        self.outputModel = {{ outputModel }}
+        self.connModel = {{ connModel }}
+
+
+    def connection(self, data={}):
+        # write your code
+        ...    
+
+    def run(self, params={}):
+        # write your code
+        # 返回必须使用 self.send({})
+
+        ...
+
+"""
+
+INDICATORRECEIVERSTESTTEMPLATE = """
+{
+	"version": "v1",
+	"type": "indicator_receiver_start",
+	"body": {
+		"receiver": "{{ title }}",
+		"meta": {},
+		"connection": {},
+		"dispatcher": {
+			"url": "http://127.0.0.1:8001/send",
+			"webhook_url": ""
+		},
+		"input": {},
+      "enable_web": false
+	}
+}
+
+"""
+
+INDICATORRECEIVERSMODELTYPES = """
+class Indicator(BaseModel):
+    uid: str
+    type: str
+    value: str
+    source: str
+    reputation: str
+    threat_score: int
+    rawed: str
+    tagsed: Optional[str] = None
+    status: Optional[bool] = None
+    notes: Optional[str] = None
+    casesed: Optional[str] = None
+    created_at: str
+    updated_at: str
+
+
+class IndicatorDomain(BaseModel):
+    uid: str
+    indicator_uid: str
+    primary_domain: Optional[str] = None
+    admin_name: Optional[str] = None
+    organization: Optional[str] = None
+    admin_email: Optional[str] = None
+    admin_phone: Optional[str] = None
+    admin_address: Optional[str] = None
+    register_at: Optional[str] = None
+    renew_at: Optional[str] = None
+    name_provider: Optional[str] = None
+    name_servers: Optional[str] = None
+
+
+class IndicatorUrl(BaseModel):
+    uid: str
+    indicator_uid: str
+    hash: Optional[str] = None
+    host: Optional[str] = None
+
+
+class IndicatorIp(BaseModel):
+    uid: str
+    indicator_uid: str
+    hostname: Optional[str] = None
+    geo_country: Optional[str] = None
+    geo_location: Optional[str] = None
+    open_ports: Optional[str] = None
+
+
+class IndicatorHash(BaseModel):
+    uid: str
+    indicator_uid: str
+    sha256: Optional[str] = None
+    sha1: Optional[str] = None
+    md5: Optional[str] = None
+
+
+class IndicatorEmail(BaseModel):
+    uid: str
+    indicator_uid: str
+    primary_domain: Optional[str] = None
+
+
+class IndicatorFile(BaseModel):
+    uid: str
+    indicator_uid: str
+    filename: Optional[str] = None
+    extension: Optional[str] = None
+    size: Optional[str] = None
+    sha256: Optional[str] = None
+    sha1: Optional[str] = None
+    md5: Optional[str] = None
+
+
+class IndicatorHost(BaseModel):
+    uid: str
+    indicator_uid: str
+    ip: Optional[str] = None
+    mac: Optional[str] = None
+    bios: Optional[str] = None
+    memory: Optional[str] = None
+    processors: Optional[str] = None
+    os: Optional[str] = None
+
+
+class IndicatorAccount(BaseModel):
+    uid: str
+    indicator_uid: str
+    username: Optional[str] = None
+    email: Optional[str] = None
+    account_type: Optional[str] = None
+    role: Optional[str] = None
+    domain: Optional[str] = None
+    organization: Optional[str] = None
+"""
+
+INDICATORRECEIVERSMODELTEMPLATE = """
+class {{ className }}(BaseModel):
+
+    indicator: Indicator
+    indicator_sub: Union[IndicatorDomain, IndicatorUrl, IndicatorIp, IndicatorHash, IndicatorEmail, IndicatorFile, IndicatorHost, IndicatorAccount, None]
+
+"""
+
 

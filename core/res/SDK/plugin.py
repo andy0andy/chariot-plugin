@@ -15,6 +15,7 @@ class Plugin(object):
         self.connection = {}
         self.actions = {}
         self.triggers = {}
+        self.indicator_receivers = {}
 
 
     def add_connection(self, connect):
@@ -25,5 +26,8 @@ class Plugin(object):
 
     def add_triggers(self, trigger):
         self.triggers[trigger.name] = trigger
+
+    def add_indicator_receivers(self, indicator_receiver):
+        self.indicator_receivers[indicator_receiver.name] = indicator_receiver
 
 

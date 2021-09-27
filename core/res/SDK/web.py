@@ -111,7 +111,42 @@ class Server(object):
 
         return output
 
+    @staticmethod
+    @app.post("/indicator_receivers/{indicator_receiver_name}")
+    def indicator_receivers(indicator_receiver_name: str, plugin_stdin: typing.Optional[models.PluginStdin]):
+        # 外部类
+        indicator_receiver_model = plugins.indicator_receivers[indicator_receiver_name]
 
+        # 取出body
+        plugin_stdin = json.dumps(plugin_stdin.dict())
+        stdin_body = core.parse_stdin(plugin_stdin)
+
+        # 获取input
+        inp = core.extract_pointer(stdin_body, "/input")
+        connect_data = core.extract_pointer(stdin_body, "/connection")
+        dispatcher_url = core.extract_pointer(stdin_body, "/dispatcher/url")
+
+        # 执行　外部run 相关操作
+        output = indicator_receiver_model._run(inp, connect_data, dispatcher_url)
+
+        return output
+
+    @staticmethod
+    @app.post("/indicator_receivers/{indicator_receiver_name}/test")
+    def indicator_receivers_test(indicator_receiver_name: str, plugin_stdin: typing.Optional[models.PluginStdin] = None):
+        # 外部类
+        indicator_receiver_model = plugins.indicator_receivers[indicator_receiver_name]
+
+        # 取出body
+        plugin_stdin = json.dumps(plugin_stdin.dict())
+        stdin_body = core.parse_stdin(plugin_stdin)
+
+        # 获取input
+        connect_data = core.extract_pointer(stdin_body, "/connection")
+
+        output = indicator_receiver_model.test(connect_data)
+
+        return output
 
 
     def runserver(self):

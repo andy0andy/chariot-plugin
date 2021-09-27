@@ -26,6 +26,7 @@ def generate(path: str, yml: str):
     plugin_name = yaml_data.get("name", "hah")
     actions_class_list = []
     triggers_class_list = []
+    indicator_receivers_class_list = []
 
     # 当前文件路劲下生成sdk
     tar_path = os.path.join(BASE_DIR, os.path.join("res", "demo.tar.gz"))
@@ -218,11 +219,92 @@ def generate(path: str, yml: str):
     logging.info(f"gnerated triggers/models.py ok")
 
 
+
+    # 生成indicator_receivers
+    indicator_receivers_path = os.path.join(path, "indicator_receivers")
+    if not os.path.exists(indicator_receivers_path):
+        os.mkdir(indicator_receivers_path)
+
+    indicator_receiversTemp = ""
+    indicator_receiversModelTemp = ""
+    indicator_receiversModelTemp += modelHeader
+    indicator_receiversModelTemp += INDICATORRECEIVERSMODELTYPES
+    indicator_receiversModelTemp += typesTemp
+    indicator_receiversModelTemp += connTemp
+
+    indicator_receivers = yaml_data.get("indicator_receivers")
+    if indicator_receivers:
+        init_list = []
+
+        for title, data in indicator_receivers.items():
+
+            # models
+            inp = data.get("input")
+
+            indicator_receiversName = tools.getModelName(title, "indicator_receivers")
+            inpClassName = tools.getModelName(title, "Input")
+            outpClassName = tools.getModelName(title, "Output")
+
+            indicator_receivers_class_list.append(indicator_receiversName)
+            init_list.append([
+                title,
+                indicator_receiversName
+            ])
+
+            inp_data = {
+                "className": inpClassName,
+                "args": tools.ymlTransPy(inp)
+            }
+            outp_data = {
+                "className": outpClassName,
+            }
+
+            inpTemp = tools.renderStrTemplate(inp_data, MODELTEMPLATE)
+            outpTemp = tools.renderStrTemplate(outp_data, INDICATORRECEIVERSMODELTEMPLATE)
+
+            # model主要内容
+            indicator_receiversModelTemp += inpTemp
+            indicator_receiversModelTemp += outpTemp
+
+            # indicator_receiver
+            indicator_receiverData = {
+                "indicator_receiversName": indicator_receiversName,
+                "name": title,
+                "inputModel": inpClassName,
+                "outputModel": outpClassName,
+                "connModel": tools.getModelName("connection"),
+            }
+            indicator_receiversTemp = tools.renderStrTemplate(indicator_receiverData, INDICATORRECEIVERSTEMPLATE)
+
+            file_path = os.path.join(indicator_receivers_path, f"{title}.py")
+            if not os.path.exists(file_path):
+                tools.writeFile(indicator_receiversTemp, file_path)
+                logging.info(f"gnerated indicator_receivers/{title}.py ok")
+
+            # 生成测试文件
+            file_path = os.path.join(tests_path, f"{title}.json")
+            testData = tools.renderStrTemplate({"title": title}, INDICATORRECEIVERSTESTTEMPLATE)
+            tools.writeFile(testData, file_path)
+            logging.info(f"generated tests/{title}.json ok")
+
+        # 生成__init__.py
+        file_path = os.path.join(indicator_receivers_path, "__init__.py")
+        initData = tools.renderStrTemplate({"init_list": init_list}, INITTEMPLATE)
+        tools.writeFile(initData, file_path)
+        logging.info(f"generated actions/__init__.py ok")
+
+    file_path = os.path.join(indicator_receivers_path, "models.py")
+    tools.writeFile(indicator_receiversModelTemp, file_path)
+    logging.info(f"gnerated indicator_receivers/models.py ok")
+
+
+
     # 创建入口文件　main.py
     mainData = {
         "pluginName": tools.getModelName(plugin_name, "Plugin").replace(" ", "_"),
         "actionClassees": actions_class_list,
-        "triggerClassees": triggers_class_list
+        "triggerClassees": triggers_class_list,
+        "indicatorReceiverClassees": indicator_receivers_class_list
     }
     file_path = os.path.join(path, "main.py")
     mainTemp = tools.renderStrTemplate(mainData, MAINTEMPLATE)
